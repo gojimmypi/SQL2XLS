@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2010
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQL2XLS", "SQL2XLS\SQL2XLS.csproj", "{0208E91E-A7BA-487E-903F-4D6876D929E1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B5860F05-5BD3-4D08-9ABA-CD29DED32D35}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0208E91E-A7BA-487E-903F-4D6876D929E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0208E91E-A7BA-487E-903F-4D6876D929E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0208E91E-A7BA-487E-903F-4D6876D929E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0208E91E-A7BA-487E-903F-4D6876D929E1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {95AB65E6-8950-4A91-AFAB-1D1FF184D211}
+	EndGlobalSection
+EndGlobal
