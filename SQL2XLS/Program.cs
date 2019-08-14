@@ -17,19 +17,89 @@ namespace SQL2XLS
     {
         private static string ServerName = "localhost";
         private static string DatabaseName = "common";
-        private static bool verboseMode = false;
         private static bool blnShowHelp = false;
         private static bool blnDebugMode = false;
-        private static string messageResult = "";
-        private static string errorMessage = "";
-        private static string CrLf = "\r\n";
         private static bool errorFound = false;
+        private static bool verboseMode = false;
 
         private static DataSet ds;
         private static string FileID = "";
-        private static string fieldFileID = "batch_id";
+        private static string fieldFileID = "batch_id"; // we can optionall number the files
 
         #region config
+        //***********************************************************************************************************************************
+        private static string FILE_FORMAT()
+        //***********************************************************************************************************************************
+        {
+            string res = System.Configuration.ConfigurationManager.AppSettings["FILE_FORMAT"];
+            if (String.IsNullOrEmpty(res))
+            {
+                res = "XLSX";
+            }
+            switch (res)
+            {
+                case "CSV":
+                case "XLSX":
+                    break;
+
+               default:
+                    throw new Exception("Unsupported FILE_FORMAT.");
+            }
+
+            return res;
+        }
+        
+        //***********************************************************************************************************************************
+        private static bool OVERWRITE_EXISTING()
+        //***********************************************************************************************************************************
+        {
+            bool res = false;
+            string str = System.Configuration.ConfigurationManager.AppSettings["OVERWRITE_EXISTING"];
+            if (String.IsNullOrEmpty(str))
+            {
+                res = false;
+            }
+            switch (str.ToUpper())
+            {
+                case "TRUE":
+                    res = true;
+                    break;
+                case "FALSE":
+                    res = false;
+                    break;
+
+                default:
+                    throw new Exception("Unsupported OVERWRITE_EXISTING value");
+            }
+
+            return res;
+        }
+
+        //***********************************************************************************************************************************
+        private static bool FIELD_HEADER()
+        //***********************************************************************************************************************************
+        {
+            bool res = false;
+            string str = System.Configuration.ConfigurationManager.AppSettings["FIELD_HEADER"];
+            if (String.IsNullOrEmpty(str))
+            {
+                res = false;
+            }
+            switch (str.ToUpper())
+            {
+                case "TRUE":
+                    res = true;
+                    break;
+                case "FALSE":
+                    res = false;
+                    break;
+
+                default:
+                    throw new Exception("Unsupported FIELD_HEADER value");
+            }
+
+            return res;
+        }
         //***********************************************************************************************************************************
         private static string FILE_PATH()
         //***********************************************************************************************************************************
@@ -57,6 +127,19 @@ namespace SQL2XLS
             }
             return res;
         }
+
+        //***********************************************************************************************************************************
+        private static string FILE_SUFFIX(int n)
+        //***********************************************************************************************************************************
+        {
+            string res = System.Configuration.ConfigurationManager.AppSettings["FILE_ROOT_" + n.ToString()];
+            if (String.IsNullOrEmpty(res))
+            {
+                res = "TABLE_" + n.ToString(); // if there's no preferred file name, use TABLE_[n]
+            }
+            return res;
+        }
+
 
         //***********************************************************************************************************************************
         private static string SQL_COMMAND()
@@ -132,6 +215,71 @@ namespace SQL2XLS
             }
         }
 
+        /// <summary>
+        ///   write the contents of [dataTable] to a CSV file named [FileName]
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <param name="FileName"></param>
+        /// <param name="overwriteExisting"></param>
+        private static void writeDataTable_TO_CsvFile(DataTable dataTable, string FileName, Boolean overwriteExisting = false, bool IncludeHeaderNames = false)
+        {
+            string columns = "";
+            string thisColumnName = "";
+            string thisValue = "";
+            string values = "";
+            int rowCount = 0;
+            if (File.Exists(FileName))
+            {
+                if (overwriteExisting)
+                {
+                    Console.WriteLine("Deleting existing " + FileName);
+                    File.Delete(FileName);
+                }
+                else
+                {
+                    throw new Exception("File " + FileName + " already exists!");
+                }
+            }
+
+            using (StreamWriter writetext = new StreamWriter(FileName))
+            {
+
+                // get the list of column names:  "[col1],[col2]..."
+                if (IncludeHeaderNames)
+                {
+                    for (int index = 0; index < dataTable.Columns.Count; index++)
+                    {
+                        thisColumnName = dataTable.Columns[index].ToString();
+                        columns += (index == 0) ? thisColumnName
+                                              : "," + thisColumnName; // build list of comma-separated column names ([name1], [name2]...)
+                    }
+                    writetext.WriteLine(columns);
+                }
+
+
+                // get the data 
+                foreach (DataRow dr in dataTable.Rows)
+                {
+                    values = ""; // need to clear the values for each new row
+
+                    for (int index = 0; index < dataTable.Columns.Count; index++)
+                    {
+                        thisValue = dr.ItemArray[index].ToString();
+                        // build a string of explicit values to insert (this works but is vulnerable to problems with single quotes)
+                        // values += (index == 0) ? "'" + Regex.Replace(thisValue, @"\t|\n|\r", "\"") + "'"
+                        //                     : ", '" + Regex.Replace(thisValue, @"\t|\n|\r", "\"") + "'"; // build values:  "('val1','val2'...)"
+
+                        values += (index == 0) ? "" : ","; // build values:  "(?,?...)"
+                        values += thisValue;
+                    }
+                    writetext.WriteLine(values);
+                    rowCount++;
+                }
+
+            }
+            Console.WriteLine("Wrote " + rowCount.ToString() + " rows to " + FileName);
+        }
+
         //***********************************************************************************************************************************
         private static void writeDataTable_TO_ExcelFile(DataTable dataTable, string FileName, Boolean overwriteExisting = false)
         //***********************************************************************************************************************************
@@ -150,9 +298,17 @@ namespace SQL2XLS
             string thisValue = "";
             int rowCount = 0;
 
-            if (File.Exists(FileName) && !overwriteExisting)
+            if (File.Exists(FileName))
             {
-                throw new Exception("File " + FileName + " already exists!" );
+                if (overwriteExisting)
+                {
+                    Console.WriteLine("Deleting existing " + FileName);
+                    File.Delete(FileName);
+                }
+                else
+                {
+                    throw new Exception("File " + FileName + " already exists!");
+                }
             }
 
             try
@@ -230,6 +386,7 @@ namespace SQL2XLS
             }
             catch (Exception ex)
             {
+                errorFound = true;
                 Console.WriteLine("SQLtoXLS Error: " + ex.Message);
                 throw new Exception(ex.Message);
             }
@@ -502,6 +659,8 @@ namespace SQL2XLS
                         Console.WriteLine("");
                         Console.WriteLine("example: sql2xls /SERVER:myTargetServer");
                         Console.WriteLine("");
+                        Console.WriteLine("see sql2xls.exe.config for SQL statemnts");
+                        Console.WriteLine("");
                         Console.WriteLine("  /?           Show this help screen.");
                         break;
 
@@ -522,6 +681,16 @@ namespace SQL2XLS
             }
         }
 
+        static void showConfig()
+        {
+            Console.WriteLine(" SQL2XLS"); 
+            Console.WriteLine("");
+            Console.WriteLine(" Server:    " + ServerName);
+            Console.WriteLine(" Database:  " + DatabaseName);
+            Console.WriteLine(" Format:    " + FILE_FORMAT().ToString());
+            Console.WriteLine(" Overwrite: " + OVERWRITE_EXISTING().ToString());
+            Console.WriteLine("");
+        }
 
         //***********************************************************************************************************************************
         //***********************************************************************************************************************************
@@ -530,6 +699,7 @@ namespace SQL2XLS
         //***********************************************************************************************************************************
         {
             initMain();
+            showConfig();
             if (!blnShowHelp)
             {
                 getDatasetFromSQL();
@@ -540,7 +710,21 @@ namespace SQL2XLS
                 }
                 for (int i = 0; i < ds.Tables.Count; i++)
                 {
-                    writeDataTable_TO_ExcelFile(ds.Tables[i], FILE_PATH() + FILE_ROOT(i) + " " + FileID + ".xlsx");
+                    if (FILE_FORMAT() == "CSV")
+                    {
+                        writeDataTable_TO_CsvFile(ds.Tables[i], 
+                                                  FILE_PATH() + FILE_ROOT(i) + FileID + ".csv", 
+                                                  OVERWRITE_EXISTING(),
+                                                  FIELD_HEADER()
+                                                  );
+                    }
+                    else
+                    {
+                        writeDataTable_TO_ExcelFile(ds.Tables[i], 
+                                                    FILE_PATH() + FILE_ROOT(i) + FileID + ".xlsx", 
+                                                    OVERWRITE_EXISTING()
+                                                   );
+                    }
                 }
             }
         }
