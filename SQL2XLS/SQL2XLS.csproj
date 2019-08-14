@@ -60,9 +60,6 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.ApplicationBlocks.Data">
-      <HintPath>..\..\PatternsAndPractices\Microsoft.ApplicationBlocks.Data\bin\x64\Release\Microsoft.ApplicationBlocks.Data.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -76,6 +73,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SQLHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
